@@ -33,6 +33,7 @@ async fn do_task() -> Result<(), Box<dyn Error>> {
 
     for base_options in base_options_list {
         if Path::new(base_options.log.as_str()).exists() {
+            println!("{}", base_options.log.as_str());
             let connection = open_connection(base_options.log.as_str())?;
             let logs = read_log_records(&connection, base_options.start_log_record, base_options.end_log_record, base_options.server.as_str(), base_options.name.as_str())?;
             println!("{} {:#?}", base_options.name, logs.len());
