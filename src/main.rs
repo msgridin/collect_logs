@@ -13,6 +13,7 @@ extern crate chrono;
 use chrono::prelude::DateTime;
 use chrono::Utc;
 use std::time::{UNIX_EPOCH, Duration};
+use reqwest::Response;
 use config::{ELASTIC_URL, ELASTIC_LOGIN, ELASTIC_PASSWORD};
 
 #[tokio::main]
@@ -48,20 +49,29 @@ async fn save_logs_to_elastic(logs: Vec<LogRecord>) -> Result<(), Box<dyn Error>
         let json = serde_json::to_string_pretty(&log)?;
         let table = "utp_logs-2022.08";
 
-        let client = reqwest::Client::builder()
-            // .proxy(reqwest::Proxy::https("http://10.110.14.30:3128")?)
-            .build()?;
+        // let proxy = "http://10.110.14.30:3128";
+        // let client = reqwest::Client::builder()
+        //     .proxy(reqwest::Proxy::all(proxy)?)
+        //     .build()?;
+        let client = reqwest::Client::new();
         let url = format!("{}/{}/_doc/{}", ELASTIC_URL, table, log.id);
         let response = client.post(url)
             .basic_auth(ELASTIC_LOGIN, Some(ELASTIC_PASSWORD))
             .header("Content-Type", "application/json")
             .body(json)
             .send()
-            .await?;
-        let status = response.status().as_u16();
-        let body = response.text().await?;
-        if status != 200 || status != 201 {
-            text.push_str(format!("Error: {} : {} : {} : {}\n{}\n", status, log.id, log.database, log.date, body).as_str());
+            .await;
+        match response {
+            Ok(response) => {
+                let status = response.status().as_u16();
+                let body = response.text().await?;
+                if status != 200 || status != 201 {
+                    text.push_str(format!("{} : {} : {} : {}\n{}\n", status, log.id, log.database, log.date, body).as_str());
+                }
+            }
+            Err(e) => {
+                text.push_str(format!("{:#?}\n", e).as_str());
+            }
         }
     }
 
@@ -69,7 +79,8 @@ async fn save_logs_to_elastic(logs: Vec<LogRecord>) -> Result<(), Box<dyn Error>
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
-            .append(true)
+            .truncate(true)
+            // .append(true)
             .open("collect_logs_errors.txt")?;
         file.write_all(text.as_bytes())?;
     }
