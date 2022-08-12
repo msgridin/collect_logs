@@ -49,7 +49,7 @@ async fn save_logs_to_elastic(logs: Vec<LogRecord>) -> Result<(), Box<dyn Error>
         let table = "utp_logs-2022.08";
 
         let client = reqwest::Client::builder()
-            .proxy(reqwest::Proxy::https("http://10.110.14.30:3128")?)
+            // .proxy(reqwest::Proxy::https("http://10.110.14.30:3128")?)
             .build()?;
         let url = format!("{}/{}/_doc/{}", ELASTIC_URL, table, log.id);
         let response = client.post(url)
@@ -60,7 +60,7 @@ async fn save_logs_to_elastic(logs: Vec<LogRecord>) -> Result<(), Box<dyn Error>
             .await?;
         let status = response.status().as_u16();
         let body = response.text().await?;
-        if status != 200 {
+        if status != 200 || status != 201 {
             text.push_str(format!("Error: {} : {} : {} : {}\n{}\n", status, log.id, log.database, log.date, body).as_str());
         }
     }
