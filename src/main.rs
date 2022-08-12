@@ -30,11 +30,12 @@ pub async fn task() {
 
 async fn do_task() -> Result<(), Box<dyn Error>> {
     let base_options_list = read_base_options_file("collect_logs_params.txt")?;
+    println!("{:#?}", base_options_list);
 
     for base_options in base_options_list {
         if Path::new(base_options.log.as_str()).exists() {
             let connection = open_connection(base_options.log.as_str())?;
-            let logs = read_log_records(&connection, base_options.last_log_record, base_options.server.as_str(), base_options.name.as_str())?;
+            let logs = read_log_records(&connection, base_options.start_log_record, base_options.end_log_record, base_options.server.as_str(), base_options.name.as_str())?;
             let _ = save_logs_to_elastic(logs).await;
         }
     }
@@ -86,7 +87,8 @@ fn read_base_options_file(path: &str) -> Result<Vec<BaseOptions>, Box<dyn Error>
         let base_options = BaseOptions {
             server: lines.next().unwrap().trim().to_string(),
             name: lines.next().unwrap().trim().to_string(),
-            last_log_record: lines.next().unwrap().trim().parse().unwrap(),
+            start_log_record: lines.next().unwrap().parse().unwrap(),
+            end_log_record: lines.next().unwrap().parse().unwrap(),
             log: lines.next().unwrap().trim().to_string(),
         };
         list.push(base_options);
@@ -100,7 +102,7 @@ fn open_connection(path: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-fn read_log_records(connection: &Connection, last_record: i64, server: &str, database: &str) -> Result<Vec<LogRecord>> {
+fn read_log_records(connection: &Connection, start_log_record: i64, end_log_record: i64, server: &str, database: &str) -> Result<Vec<LogRecord>> {
     let mut stmt = connection.prepare(
         r#"
         WITH EventNames(code, name) AS
@@ -162,11 +164,11 @@ fn read_log_records(connection: &Connection, last_record: i64, server: &str, dat
     LEFT JOIN EventNames en ON ec.name = en.code
     LEFT JOIN MetadataCodes m ON e.metadataCodes = m.code
     WHERE
-    (date > ?)
+    (date >= ? AND date <= ?)
     order by date desc;"#,
     )?;
 
-    let rows: Vec<Result<LogRecord>> = stmt.query_map([last_record], |row| {
+    let rows: Vec<Result<LogRecord>> = stmt.query_map([start_log_record, end_log_record], |row| {
         let is_error: bool = row.get(0)?;
         let transaction_status: String = row.get(8)?;
         let status: String = if is_error { "Ошибка".to_string() } else { transaction_status.clone() };

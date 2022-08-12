@@ -25,6 +25,7 @@ pub struct LogRecord {
 pub struct BaseOptions {
     pub server: String,
     pub name: String,
-    pub last_log_record: i64,
+    pub start_log_record: i64,
+    pub end_log_record: i64,
     pub log: String,
 }
