@@ -30,13 +30,13 @@ pub async fn task() {
 
 async fn do_task() -> Result<(), Box<dyn Error>> {
     let base_options_list = read_base_options_file("collect_logs_params.txt")?;
-    println!("{:#?}", base_options_list);
 
     for base_options in base_options_list {
         if Path::new(base_options.log.as_str()).exists() {
             let connection = open_connection(base_options.log.as_str())?;
             let logs = read_log_records(&connection, base_options.start_log_record, base_options.end_log_record, base_options.server.as_str(), base_options.name.as_str())?;
-            let _ = save_logs_to_elastic(logs).await;
+            println!("{} {:#?}", base_options.name, logs.len());
+            let _ = save_logs_to_elastic(logs).await?;
         }
     }
     Ok(())
