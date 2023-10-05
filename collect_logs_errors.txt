@@ -1,0 +1,26 @@
+reqwest::Error {
+    kind: Request,
+    url: Url {
+        scheme: "https",
+        cannot_be_a_base: false,
+        username: "",
+        password: None,
+        host: Some(
+            Domain(
+                "elastic.betinvest.work",
+            ),
+        ),
+        port: None,
+        path: "/utp_logs-2022.08/_doc/637958846640000",
+        query: None,
+        fragment: None,
+    },
+    source: hyper::Error(
+        Connect,
+        Os {
+            code: -2146893018,
+            kind: Uncategorized,
+            message: "Получено непредвиденное сообщение или оно имеет неправильный формат.",
+        },
+    ),
+}

@@ -50,11 +50,12 @@ async fn save_logs_to_elastic(logs: Vec<LogRecord>) -> Result<(), Box<dyn Error>
         let json = serde_json::to_string_pretty(&log)?;
         let table = "utp_logs-2022.08";
 
-        // let proxy = "http://10.110.14.30:3128";
-        // let client = reqwest::Client::builder()
-        //     .proxy(reqwest::Proxy::all(proxy)?)
-        //     .build()?;
-        let client = reqwest::Client::new();
+        let proxy = "http://10.110.14.30:3128";
+        let client = reqwest::Client::builder()
+            .no_proxy()
+            // .proxy(reqwest::Proxy::all(proxy)?)
+            .build()?;
+        // let client = reqwest::Client::new();
         let url = format!("{}/{}/_doc/{}", ELASTIC_URL, table, log.id);
         let response = client.post(url)
             .basic_auth(ELASTIC_LOGIN, Some(ELASTIC_PASSWORD))
